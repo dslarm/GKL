@@ -46,11 +46,32 @@ void initPairHMM()
   ConvertChar::init();
 }
 
-/* Computelikelihoodsfloat method takes in one vector of input and computes the pHMM result float */
 
-void computelikelihoodsfloat(testcase *testcases, float *expected_results)
+void computelikelihoodsboth(testcase *testcases, double *expected_results, int batch_size)
 {
 
+#ifdef _OPENMP
+  #pragma omp parallel for schedule(dynamic, 1)
+#endif
+  for (int i = 0; i < batch_size; i++) {
+    double result_final = 0;
+    float result_float = g_compute_full_prob_float(&testcases[i]);
+    if (result_float < MIN_ACCEPTED) {
+      double result_double = g_compute_full_prob_double(&testcases[i]);
+      result_final = log10(result_double) - g_ctxd.LOG10_INITIAL_CONSTANT;
+    }
+    else {
+      result_final = (double)(log10f(result_float) - g_ctxf.LOG10_INITIAL_CONSTANT);
+    }
+    
+    expected_results[i] = result_final;
+  }
+  return;
+}
+
+/* Computelikelihoodsfloat method takes in one vector of input and computes the pHMM result float */
+
+void computelikelihoodsfloat(testcase *testcases, float* expected_results) {
     float result_final = 0;
 
     float result_float = g_compute_full_prob_float(testcases);
@@ -60,7 +81,6 @@ void computelikelihoodsfloat(testcase *testcases, float *expected_results)
     (*expected_results) = (float)result_final;
 
     return;
-
 }
 
 /* Computelikelihoodsdouble method takes in one vector of input and computes the pHMM result double */

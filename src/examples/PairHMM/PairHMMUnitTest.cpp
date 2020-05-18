@@ -49,6 +49,7 @@ long g_total_cells = 0;
 
 void initPairHMM();
 void computelikelihoodsfloat(testcase *testcases, float *expected_result);
+void computelikelihoodsboth(testcase *testcases, double *expected_result, int batch_size);
 
 
 void normalize(string& str, int min_value=0) {
@@ -133,7 +134,8 @@ vector<Batch> read_testfile(string filename) {
 
 void check_results(Batch& batch) {
   int batch_size = batch.num_reads * batch.num_haps;
-  vector<float> expected_results(batch_size);
+  // vector<double> expected_results(batch_size);
+  double expected_results[batch_size];
   testcase testcases[batch_size];
 
   testcase *tc = testcases;
@@ -151,8 +153,11 @@ void check_results(Batch& batch) {
     }
   }
 
+  computelikelihoodsboth(testcases, expected_results, batch_size);
+  
   for (int i = 0; i < batch_size; i++) {
-    computelikelihoodsfloat(&testcases[i], &expected_results[i]);
+    // computelikelihoodsfloat(&testcases[i], &expected_results[i]);
+  	printf("%lf\n", expected_results[i]);
   }
 
   return;
@@ -218,7 +223,7 @@ int main(int argc, char** argv) {
   // run single batch or all batches
   if (batch >= 0) {
     while (loop) {
-    //  printf("Batch %d", batch);
+      printf("Batch %d\n", batch);
       time_pairhmm(batches[batch], num_pe, check);
       loop--;
     }
@@ -226,7 +231,7 @@ int main(int argc, char** argv) {
   else {
     while (loop) {
       for (int i = 0; i < batches.size(); i++) {
-       // printf("Batch %d", i);
+        printf("Batch %d\n", i);
         time_pairhmm(batches[i], num_pe, check);
       }
       loop--;
