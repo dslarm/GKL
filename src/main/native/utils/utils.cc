@@ -24,7 +24,7 @@
 #if defined(_MSC_VER)
   #include <intrin.h> // SIMD intrinsics for Windows
 #else
-  #include <x86intrin.h> // SIMD intrinsics for GCC
+  #include <simde/x86/sse.h> // SIMD intrinsics for GCC
 #endif
 
 #ifdef linux
@@ -42,7 +42,7 @@
 JNIEXPORT jboolean JNICALL Java_com_intel_gkl_IntelGKLUtils_getFlushToZeroNative
   (JNIEnv *env, jobject obj)
 {
-    jboolean value = _MM_GET_FLUSH_ZERO_MODE() == _MM_FLUSH_ZERO_ON ? 1 : 0;
+    jboolean value = SIMDE_MM_GET_FLUSH_ZERO_MODE() == SIMDE_MM_FLUSH_ZERO_ON ? 1 : 0;
     return value;
 }
 
@@ -56,11 +56,11 @@ JNIEXPORT void JNICALL Java_com_intel_gkl_IntelGKLUtils_setFlushToZeroNative
 {
     if (value)
     {
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+        SIMDE_MM_SET_FLUSH_ZERO_MODE(SIMDE_MM_FLUSH_ZERO_ON);
     }
     else
     {
-        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
+        SIMDE_MM_SET_FLUSH_ZERO_MODE(SIMDE_MM_FLUSH_ZERO_OFF);
     }
 }
 

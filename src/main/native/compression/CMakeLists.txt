@@ -1,6 +1,7 @@
 
 
 include(ExternalProject)
+include_directories(../../../../simde)
 
 #---------------------------------------------------------------------
 # otc_zlib
