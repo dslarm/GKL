@@ -24,6 +24,25 @@
 #include<stdio.h>
 #include "smithwaterman_common.h"
 
+#ifdef __aarch64__
+void * _mm_malloc(size_t size, size_t align)
+{
+  void *ptr;
+  if (align == 1)
+    return malloc(size);
+  if (align == 2 || (sizeof(void *) == 8 && align == 4))
+    align = sizeof(void *);
+  if (!posix_memalign(&ptr, align, size))
+    return ptr;
+  return NULL;
+}
+
+void _mm_free(void *p)
+{
+  free(p);
+}
+#endif
+
 #define MAIN_CODE(bt_vec) \
             { \
             VEC_INT_TYPE e10 = VEC_LOADU(&E[inde]); \

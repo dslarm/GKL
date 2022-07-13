@@ -31,7 +31,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef __x86_64__
 #include <immintrin.h>
+#endif
+
 #include <assert.h>
 #include <debug.h>
 #include "avx2_impl.h"

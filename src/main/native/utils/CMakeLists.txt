@@ -2,6 +2,7 @@
 # utils
 #---------------------------------------------------------------------
 include_directories(../common)
+include_directories(../../../../simde)
 
 find_package(OpenMP)
 

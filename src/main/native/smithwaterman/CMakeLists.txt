@@ -4,15 +4,24 @@
 if(NOT APPLE)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
 endif()
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+    set (X86 TRUE)
+    message("Is x86")
+else ()
+    set (X86 FALSE)
+    message("Is not x86")
+endif ()
+
+if(X86)
 set_property(SOURCE avx2_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 ")
 set_property(SOURCE avx512_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 -mavx512f -mavx512dq -mavx512vl -mavx512bw ")
-
+endif()
 
 #---------------------------------------------------------------------
 # common includes
 #---------------------------------------------------------------------
 include_directories(../common)
-
+include_directories(../../../../simde)
 
 #---------------------------------------------------------------------
 # smithwaterman
