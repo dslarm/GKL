@@ -60,3 +60,6 @@ add_library(${TARGET} SHARED
 add_dependencies(${TARGET} isalExternal otc_zlibExternal)
 target_link_libraries(${TARGET} zlibstatic isal)
 install(TARGETS ${TARGET} DESTINATION ${CMAKE_BINARY_DIR})
+
+
+include_directories(../../../../simde)

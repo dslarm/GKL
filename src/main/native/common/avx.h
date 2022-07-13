@@ -29,9 +29,16 @@
     #include <intrin.h>
 #else
     // SIMD intrinsics for GCC
-    #include <x86intrin.h>
-    #include <stdint.h>
-    #include <cpuid.h>
+//    #include <x86intrin.h>
+#define SIMDE_ENABLE_NATIVE_ALIASES
+#include <simde/x86/avx512.h>
+#include <simde/x86/avx.h>
+#include <simde/x86/sse4.1.h>
+  #include <simde/x86/sse.h>
+#include <stdint.h>
+#ifndef __aarch64__
+#include <cpuid.h>
+#endif
 #endif
 
 // helper function
@@ -69,7 +76,10 @@ int check_xcr0_zmm()
 inline
 bool is_avx_supported()
 {
-    uint32_t a, b, c, d;
+#ifdef __aarch64__
+  return true;
+#else
+  uint32_t a, b, c, d;
     uint32_t avx_mask = (1 << 27) | (1 << 28);
 
     __cpuid_count(1, 0, a, b, c, d);
@@ -84,6 +94,7 @@ bool is_avx_supported()
     }
 
     return true;
+#endif
 }
 
 /*
@@ -92,7 +103,10 @@ bool is_avx_supported()
 inline
 bool is_avx2_supported()
 {
-    uint32_t a, b, c, d;
+#ifdef __aarch64__
+  return true;
+#else
+  uint32_t a, b, c, d;
     uint32_t osxsave_mask = (1 << 27); // OSX.
     uint32_t avx2_bmi_mask = (1 << 5) | // AVX2
                                (1 << 3) | // BMI1
@@ -119,6 +133,7 @@ bool is_avx2_supported()
     }
 
     return true;
+#endif
 }
 
 /*
@@ -127,6 +142,11 @@ bool is_avx2_supported()
 inline
 bool is_avx512_supported()
 {
+#ifdef __aarch64__
+  return false;
+#else
+  
+
 #ifndef __APPLE__
     uint32_t a, b, c, d;
     uint32_t osxsave_mask = (1 << 27); // OSX.
@@ -158,6 +178,7 @@ bool is_avx512_supported()
     return true;
 #else
     return false;
+#endif
 #endif
 }
 

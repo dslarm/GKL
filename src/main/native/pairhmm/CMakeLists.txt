@@ -4,8 +4,8 @@
 if(NOT APPLE)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
 endif()
-set_property(SOURCE avx_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx ")
-set_property(SOURCE avx512_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 -mavx512f -mavx512dq -mavx512vl ")
+#set_property(SOURCE avx_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx ")
+#set_property(SOURCE avx512_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 -mavx512f -mavx512dq -mavx512vl ")
 
 #---------------------------------------------------------------------
 # common includes
@@ -31,3 +31,6 @@ if(OPENMP_FOUND)
   target_link_libraries(${TARGET} ${OpenMP_CXX_FLAGS})
   install(TARGETS ${TARGET} DESTINATION ${CMAKE_BINARY_DIR})
 endif()
+
+
+include_directories(../../../../simde)

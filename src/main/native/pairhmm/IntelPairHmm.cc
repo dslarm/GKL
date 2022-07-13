@@ -32,7 +32,7 @@
 #include "IntelPairHmm.h"
 #include "pairhmm_common.h"
 #include "avx_impl.h"
-#ifndef __APPLE__
+#if not (defined( __APPLE__)) && not (defined ( __aarch64__ ))
   #include "avx512_impl.h"
 #endif
 #include "Context.h"
@@ -90,7 +90,7 @@ JNIEXPORT void JNICALL Java_com_intel_gkl_pairhmm_IntelPairHmm_initNative
 
 
   // enable FTZ
-  if (_MM_GET_FLUSH_ZERO_MODE() != _MM_FLUSH_ZERO_ON) {
+  if (SIMDE_MM_GET_FLUSH_ZERO_MODE() != _MM_FLUSH_ZERO_ON) {
     DBG("Flush-to-zero (FTZ) is enabled when running PairHMM");
   }
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
@@ -98,7 +98,7 @@ JNIEXPORT void JNICALL Java_com_intel_gkl_pairhmm_IntelPairHmm_initNative
   // set function pointers
   if(is_avx512_supported())
   {
-#ifndef __APPLE__
+#if not (defined ( __APPLE__ )) && not (defined (__aarch64__))
     DBG("Using CPU-supported AVX-512 instructions");
     g_compute_full_prob_float = compute_fp_avx512s;
     g_compute_full_prob_double = compute_fp_avx512d;

@@ -24,6 +24,19 @@
 #include<stdio.h>
 #include "smithwaterman_common.h"
 
+
+void * _mm_malloc(size_t size, size_t align) {
+  void *ptr;
+  if (align == 1)
+    return malloc(size);
+  if (align == 2 || (sizeof(void *) == 8 && align == 4))
+    align = sizeof(void *);
+  if (!posix_memalign(&ptr, align, size))
+    return ptr;
+  return NULL;
+}
+
+
 #define MAIN_CODE(bt_vec) \
             { \
             VEC_INT_TYPE e10 = VEC_LOADU(&E[inde]); \
@@ -472,9 +485,9 @@ int32_t CONCAT(runSWOnePairBT_,SIMD_ENGINE)(int32_t match, int32_t mismatch, int
     int16_t  *cigarBuf_  = (int16_t *)_mm_malloc(4 * D_MAX_SEQ_LEN * sizeof(int16_t), 64);
 
     if (E_ == NULL  || backTrack_  == NULL || cigarBuf_ == NULL) {
-         _mm_free(E_);
-         _mm_free(backTrack_);
-         _mm_free(cigarBuf_);
+         free(E_);
+         free(backTrack_);
+         free(cigarBuf_);
 	 return SW_MEMORY_ALLOCATION_FAILED;
     } 
 
@@ -492,9 +505,9 @@ int32_t CONCAT(runSWOnePairBT_,SIMD_ENGINE)(int32_t match, int32_t mismatch, int
     getCIGAR(&p, cigarBuf_, cigarLen, 0);
     (*cigarCount) = p.cigarCount;
 
-    _mm_free(E_);
-    _mm_free(backTrack_);
-    _mm_free(cigarBuf_);
+    free(E_);
+    free(backTrack_);
+    free(cigarBuf_);
 
     *offset = p.alignmentOffset;
     return SW_SUCCESS;

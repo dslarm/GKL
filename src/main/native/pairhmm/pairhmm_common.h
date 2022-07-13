@@ -27,7 +27,12 @@
 #if defined(_MSC_VER)
   #include <intrin.h> // SIMD intrinsics for Windows
 #else
-  #include <x86intrin.h> // SIMD intrinsics for GCC
+//  #include <x86intrin.h> // SIMD intrinsics for GCC
+#define SIMDE_ENABLE_NATIVE_ALIASES
+  #include <simde/x86/avx512.h>
+  #include <simde/x86/avx.h>
+  #include <simde/x86/sse4.1.h>
+  #include <simde/x86/sse.h>
 #endif
 
 #include <assert.h>

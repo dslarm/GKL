@@ -23,7 +23,8 @@
  */
 #include "avx512_impl.h"
 
-#ifndef __APPLE__
+#if not (defined( __APPLE__)) && not (defined ( __aarch64__ ))
+
 
 #include "avx512-pairhmm.h"
 
