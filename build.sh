@@ -27,6 +27,9 @@ PROXY_HOST=`echo $https_proxy | tr -s '/' ':' | cut -d ':' -f2`
 PROXY_PORT=`echo $https_proxy | tr -s '/' ':' | cut -d ':' -f3`
 export JAVA_PROXY="-Dhttps.proxyHost=$PROXY_HOST -Dhttps.proxyPort=$PROXY_PORT"
 
+git submodule init
+git submodule update
+
 echo "Clean and Build"
 ./gradlew $JAVA_PROXY clean
 ./gradlew $JAVA_PROXY build
