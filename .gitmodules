@@ -1,3 +1,6 @@
 [submodule "simde"]
 	path = simde
 	url = https://github.com/simd-everywhere/simde
+[submodule "sse2neon"]
+	path = sse2neon
+	url = https://github.com/DLTcollab/sse2neon
