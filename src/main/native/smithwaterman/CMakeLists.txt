@@ -21,7 +21,11 @@ endif()
 # common includes
 #---------------------------------------------------------------------
 include_directories(../common)
+if (NOT $ENV{SSE2NEON} STREQUAL "")
+include_directories(../../../../sse2neon)
+else()
 include_directories(../../../../simde)
+endif()
 
 #---------------------------------------------------------------------
 # smithwaterman

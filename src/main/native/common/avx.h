@@ -34,11 +34,15 @@
     #include <x86intrin.h>
     #include <cpuid.h>
 #else
+#ifdef SSE2NEON
+#include <sse2neon.h>
+#else
     #define SIMDE_ENABLE_NATIVE_ALIASES
     #include <simde/x86/avx512.h>
     #include <simde/x86/avx.h>
     #include <simde/x86/sse4.1.h>
     #include <simde/x86/sse.h>
+#endif
 #endif
 #endif
 

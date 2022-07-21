@@ -24,7 +24,11 @@
 #if defined(_MSC_VER)
   #include <intrin.h> // SIMD intrinsics for Windows
 #else
-  #include <simde/x86/sse.h> // SIMD intrinsics for GCC
+#ifdef SSE2NEON
+#include <sse2neon.h>
+#else
+#include <simde/x86/sse.h> // SIMD intrinsics for GCC
+#endif
 #endif
 
 #ifdef linux
