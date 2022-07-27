@@ -1,35 +1,31 @@
-/*
- * The MIT License
+/**
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016 Intel Corporation
+ * Copyright (c) 2016-2021 Intel Corporation
  *
- * 	Permission is hereby granted, free of charge, to any person
- * 	obtaining a copy of this software and associated documentation
- * 	files (the "Software"), to deal in the Software without
- * 	restriction, including without limitation the rights to use,
- * 	copy, modify, merge, publish, distribute, sublicense, and/or
- * 	sell copies of the Software, and to permit persons to whom the
- * 	Software is furnished to do so, subject to the following
- * 	conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * 	The above copyright notice and this permission notice shall be
- * 	included in all copies or substantial portions of the
- * 	Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- * 	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * 	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- * 	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * 	COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * 	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
-
 package com.intel.gkl.compression;
 
-import com.intel.gkl.IntelGKLUtils;
 import com.intel.gkl.NativeLibraryLoader;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.broadinstitute.gatk.nativebindings.NativeLibrary;
 
 import java.io.File;
@@ -39,8 +35,10 @@ import java.util.zip.Deflater;
  * Provides a native Deflater implementation accelerated for the Intel Architecture.
  */
 public final class IntelDeflater extends Deflater implements NativeLibrary {
+    private final static Log logger = LogFactory.getLog(IntelInflater.class);
     private static final String NATIVE_LIBRARY_NAME = "gkl_compression";
     private static boolean initialized = false;
+    private static final Object lock_class = new Object();
 
     /**
      * Loads the native library, if it is supported on this platform. <p>
@@ -53,15 +51,16 @@ public final class IntelDeflater extends Deflater implements NativeLibrary {
      */
     @Override
     public synchronized boolean load(File tempDir) {
-
-        if (!NativeLibraryLoader.load(tempDir, NATIVE_LIBRARY_NAME)) {
-            return false;
-        }
-        if (!initialized) {
-            initNative();
-            initialized = true;
-        }
-        return true;
+        synchronized (lock_class) {
+		if (!NativeLibraryLoader.load(tempDir, NATIVE_LIBRARY_NAME)) {
+			return false;
+		}
+		if (!initialized) {
+			initNative();
+			initialized = true;
+		}
+	}
+	return true;
     }
 
     private native static void initNative();
@@ -78,8 +77,8 @@ public final class IntelDeflater extends Deflater implements NativeLibrary {
     private int strategy;
     private boolean nowrap;
 
-    
-     /**
+
+    /**
      * Creates a new compressor using the specified compression level.
      * If 'nowrap' is true then the ZLIB header and checksum fields will
      * not be used in order to support the compression format used in
@@ -88,22 +87,28 @@ public final class IntelDeflater extends Deflater implements NativeLibrary {
      * @param nowrap if true then use GZIP compatible compression
      */
     public IntelDeflater(int level, boolean nowrap) {
+
         if ((level < 0 || level > 9) && level != DEFAULT_COMPRESSION) {
             throw new IllegalArgumentException("Illegal compression level");
         }
+
+        if ((level == 1 || level == 2) && nowrap == false) {
+            throw new IllegalArgumentException("Compression configuration requested not supported");
+        }
+ 
         this.level = level;
         this.nowrap = nowrap;
         strategy = DEFAULT_STRATEGY;
 
     }
 
-     /**
+    /**
      * Creates a new compressor using the specified compression level.
      * Compressed data will be generated in ZLIB format.
      * @param level the compression level (0-9)
      */
     public IntelDeflater(int level) {
-        this(level, false);
+        this(level, true);
     }
 
     /**
@@ -111,12 +116,21 @@ public final class IntelDeflater extends Deflater implements NativeLibrary {
      * Compressed data will be generated in ZLIB format.
      */
     public IntelDeflater() {
-        this(DEFAULT_COMPRESSION, false);
+        this(DEFAULT_COMPRESSION, true);
     }
 
     @Override
-    public void reset() {
-        resetNative(nowrap);
+    public void reset() throws OutOfMemoryError, RuntimeException {
+        try {
+            resetNative(nowrap);
+        } catch (OutOfMemoryError e) {
+            logger.warn("Exception thrown from native Deflater resetNative function call " + e.getMessage());
+            throw new OutOfMemoryError("Memory allocation failed");
+        } catch (RuntimeException e) {
+            logger.warn("Exception thrown from native Deflater resetNative function call " + e.getMessage());
+            throw new RuntimeException("Deflate Initialization issue");
+        }
+
         inputBuffer = null;
         inputBufferLength = 0;
 
@@ -133,13 +147,19 @@ public final class IntelDeflater extends Deflater implements NativeLibrary {
      * @see IntelDeflater
      */
     @Override
-    public void setInput(byte[] b, int off, int len) throws NullPointerException {
+    public void setInput(byte[] b, int off, int len) {
         if(lz_stream == 0) reset();
         if(b == null) {
-            throw new NullPointerException("Input is null");
+            throw new NullPointerException("Input buffer is null");
         }
-        if(len <= 0) {
-            throw new NullPointerException("Input buffer length is zero.");
+        if (off < 0) {
+            throw new ArrayIndexOutOfBoundsException("Offset value is less than zero");
+        }
+        if(len < 0){
+            throw new ArrayIndexOutOfBoundsException("Length value is less than zero");
+        }
+        if(off > b.length - len){
+            throw new ArrayIndexOutOfBoundsException("Length value exceeds permissible range");
         }
 
         inputBuffer = b;
@@ -168,9 +188,24 @@ public final class IntelDeflater extends Deflater implements NativeLibrary {
      *         output buffer
      */
     @Override
-    public int deflate(byte[] b, int off, int len ) {
+    public int deflate(byte[] b, int off, int len) {
+        if(b == null) {
+            throw new NullPointerException("Output buffer is null");
+        }
+        if(off != 0) {
+            throw new IllegalArgumentException("The only accepted offset value is 0");
+        }
+        if(len <= 0) {
+            throw new ArrayIndexOutOfBoundsException("Length value is less or equal than zero");
+        }
+        if(inputBuffer == null || inputBufferLength == 0) {
+            throw new NullPointerException("Input buffer is null");
+        }
 
-        return deflateNative(b, len);
+        int bytesWritten = deflateNative(b, len);
+        if(bytesWritten == 0)
+            logger.warn(String.format(" Zero Bytes Written : %d", bytesWritten));
+        return bytesWritten;
     }
 
     /**

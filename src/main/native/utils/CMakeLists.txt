@@ -2,6 +2,12 @@
 # utils
 #---------------------------------------------------------------------
 include_directories(../common)
+if (NOT $ENV{SSE2NEON} STREQUAL "")
+include_directories(../../../../sse2neon)
+add_definitions( -DSSE2NEON )
+else()
+include_directories(../../../../simde)
+endif()
 
 find_package(OpenMP)
 

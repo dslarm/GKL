@@ -3,8 +3,8 @@ package com.intel.gkl.compression;
 import com.intel.gkl.IntelGKLUtils;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.zip.DeflaterFactory;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -20,7 +20,7 @@ import java.util.zip.Deflater;
 public class
 DeflaterIntegrationTest {
 
-    private final static Logger log = LogManager.getLogger(DeflaterIntegrationTest.class);
+    private final static Log log = LogFactory.getLog(DeflaterIntegrationTest.class);
     private final static String INPUT_FILE = IntelGKLUtils.pathToTestResource("HiSeq.1mb.1RG.2k_lines.bam");
 
     @Test(enabled = true)
@@ -50,7 +50,7 @@ DeflaterIntegrationTest {
         deflaterFactories.add(intelDeflaterFactory);
         deflaterFactories.add(javaDeflaterFactory);
 
-        log.info("input filesize = " + inputFile.length());
+        log.info(String.format("input filesize = %d", inputFile.length()));
         log.info("deflater level, time (sec), filesize");
 
         for (DeflaterFactory deflaterFactory : deflaterFactories) {
@@ -82,7 +82,7 @@ DeflaterIntegrationTest {
                 final SamReader expectedFile = readerFactory.open(inputFile);
                 final SamReader generatedFile = readerFactory.open(outputFile);
 
-                log.info("Checking generated output. Total records = " + totalRecords);
+                log.info(String.format("Checking generated output. Total records = %d", totalRecords));
 
                 Iterator<SAMRecord> generatedIterator = generatedFile.iterator();
                 for (final SAMRecord expected : expectedFile) {
@@ -90,6 +90,8 @@ DeflaterIntegrationTest {
                     assert(expected.toString().equals(generated.toString()));
 
                 }
+		expectedFile.close();
+		generatedFile.close();
 
             }
         }
@@ -113,7 +115,7 @@ DeflaterIntegrationTest {
         List<DeflaterFactory> deflaterFactories = new ArrayList<DeflaterFactory>();
         deflaterFactories.add(intelDeflaterFactory);
 
-        log.info("input filesize = " + inputFile.length());
+        log.info(String.format("input filesize = %d", inputFile.length()));
         log.info("deflater level, time (sec), filesize");
 
         int loopCount = 0;

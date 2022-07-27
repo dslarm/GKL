@@ -1,13 +1,13 @@
 package com.intel.gkl;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import com.intel.gkl.pairhmm.IntelPairHmmOMP;
 
 public class IntelGKLUtilsUnitTest {
-    private final static Logger log = LogManager.getLogger(IntelGKLUtilsUnitTest.class);
+    private final static Log log = LogFactory.getLog(IntelGKLUtilsUnitTest.class);
 
     // disable this test because it fails with jvmArg '-XX:+RestoreMXCSROnJNICalls'
     @Test(enabled = false)
@@ -31,7 +31,7 @@ public class IntelGKLUtilsUnitTest {
         assert(value == false);
     }
 
-    class ChildThread extends Thread {
+    static class ChildThread extends Thread {
         boolean ftzValue;
 
         public void run() {
@@ -70,6 +70,29 @@ public class IntelGKLUtilsUnitTest {
         }
 
         assert(childThread.ftzValue == false);
+    }
+
+    @Test(enabled = true)
+    public void testInvalidInputsForPathToTestResource() {
+
+        try {
+            IntelGKLUtils.pathToTestResource(null);
+            Assert.fail("NullPointerException expected.");
+        }
+        catch(NullPointerException e) {}
+
+        try {
+            IntelGKLUtils.pathToTestResource("");
+            Assert.fail("IllegalArgumentException expected.");
+        }
+        catch(IllegalArgumentException e) {}
+
+        try {
+            IntelGKLUtils.pathToTestResource("fi|e$.in");
+            Assert.fail("IllegalArgumentException expected.");
+        }
+        catch(IllegalArgumentException e) {}
+
     }
 
     @Test(enabled = true)

@@ -1,3 +1,26 @@
+/**
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2016-2021 Intel Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #ifdef linux
 #include <omp.h>
 #endif
@@ -9,16 +32,14 @@
 #include "IntelPairHmm.h"
 #include "pairhmm_common.h"
 #include "avx_impl.h"
-#ifndef __APPLE__
+#if not (defined( __APPLE__)) && not (defined ( __aarch64__ ))
   #include "avx512_impl.h"
 #endif
 #include "Context.h"
-#include "shacc_pairhmm.h"
 #include "JavaData.h"
 
 bool g_use_double;
 int g_max_threads;
-bool g_use_fpga;
 
 Context<float> g_ctxf;
 Context<double> g_ctxd;
@@ -33,12 +54,18 @@ double (*g_compute_full_prob_double)(testcase *tc);
  */
 JNIEXPORT void JNICALL Java_com_intel_gkl_pairhmm_IntelPairHmm_initNative
 (JNIEnv* env, jclass cls, jclass readDataHolder, jclass haplotypeDataHolder,
- jboolean use_double, jint max_threads, jboolean use_fpga)
+ jboolean use_double, jint max_threads)
 {
   DBG("Enter");
 
-  JavaData javaData;
-  javaData.init(env, readDataHolder, haplotypeDataHolder);
+  JavaData javaData(env);
+  try {
+    javaData.init(readDataHolder, haplotypeDataHolder);
+  } catch (JavaException& e) {
+    env->ExceptionClear();
+    env->ThrowNew(env->FindClass(e.classPath), e.message);
+    return;
+  }
 
   g_use_double = use_double;
   
@@ -61,18 +88,18 @@ JNIEXPORT void JNICALL Java_com_intel_gkl_pairhmm_IntelPairHmm_initNative
   }
 #endif
 
-  g_use_fpga = use_fpga;
-
+#ifdef __x86_64__
   // enable FTZ
   if (_MM_GET_FLUSH_ZERO_MODE() != _MM_FLUSH_ZERO_ON) {
     DBG("Flush-to-zero (FTZ) is enabled when running PairHMM");
   }
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-
+#endif
+  
   // set function pointers
   if(is_avx512_supported())
   {
-#ifndef __APPLE__
+#if not (defined ( __APPLE__ )) && not (defined (__aarch64__))
     DBG("Using CPU-supported AVX-512 instructions");
     g_compute_full_prob_float = compute_fp_avx512s;
     g_compute_full_prob_double = compute_fp_avx512d;
@@ -104,43 +131,53 @@ JNIEXPORT void JNICALL Java_com_intel_gkl_pairhmm_IntelPairHmm_computeLikelihood
 
   //==================================================================
   // get Java data
-  JavaData javaData;
-  std::vector<testcase> testcases = javaData.getData(env, readDataArray, haplotypeDataArray);
-  double* javaResults = javaData.getOutputArray(env, likelihoodArray);
+  JavaData javaData(env);
+
+  std::vector<testcase> testcases;
+  double* javaResults;
+
+  try {
+    testcases = javaData.getData(readDataArray, haplotypeDataArray);
+    javaResults = javaData.getOutputArray(likelihoodArray);
+  } catch (JavaException& e) {
+    env->ExceptionClear();
+    env->ThrowNew(env->FindClass(e.classPath), e.message);
+    return;
+  }
   
   //==================================================================
   // calcutate pairHMM
-  shacc_pairhmm::Batch batch;
-  bool batch_valid = false;
-  if (g_use_fpga && !g_use_double) {
-    batch = javaData.getBatch();
-    batch_valid = shacc_pairhmm::calculate(batch);
-  }
 
-#ifdef _OPENMP
-  #pragma omp parallel for schedule(dynamic, 1) num_threads(g_max_threads)
-#endif
-  for (int i = 0; i < testcases.size(); i++) {
-    double result_final = 0;
+    try {
+        #ifdef _OPENMP
+              #pragma omp parallel for schedule(dynamic, 1) num_threads(g_max_threads)
+        #endif
+        for (int i = 0; i < testcases.size(); i++) {
 
-    float result_float = g_use_double ? 0.0f : 
-      batch_valid ? batch.results[i] : g_compute_full_prob_float(&testcases[i]);
+            double result_final = 0;
+            float result_float = g_use_double ? 0.0f : g_compute_full_prob_float(&testcases[i]);
 
-    if (result_float < MIN_ACCEPTED) {
-      double result_double = g_compute_full_prob_double(&testcases[i]);
-      result_final = log10(result_double) - g_ctxd.LOG10_INITIAL_CONSTANT;
+            if (result_float < MIN_ACCEPTED) {
+              double result_double = g_compute_full_prob_double(&testcases[i]);
+              result_final = log10(result_double) - g_ctxd.LOG10_INITIAL_CONSTANT;
+            }
+            else {
+              result_final = (double)(log10f(result_float) - g_ctxf.LOG10_INITIAL_CONSTANT);
+            }
+
+            javaResults[i] = result_final;
+            DBG("result = %e", result_final);
+          }
     }
-    else {
-      result_final = (double)(log10f(result_float) - g_ctxf.LOG10_INITIAL_CONSTANT);
+    catch (JavaException& e) {
+       #ifdef _OPENMP
+            #pragma omp barrier
+       #endif
+       env->ExceptionClear();
+       env->ThrowNew(env->FindClass(e.classPath), "Error in pairhmm processing.");
+       return;
     }
 
-    javaResults[i] = result_final;
-    DBG("result = %e", result_final);
-  }
-
-  //==================================================================
-  // release Java data
-  javaData.releaseData(env);
   DBG("Exit");
 }
 
@@ -153,5 +190,4 @@ JNIEXPORT void JNICALL Java_com_intel_gkl_pairhmm_IntelPairHmm_computeLikelihood
 JNIEXPORT void JNICALL Java_com_intel_gkl_pairhmm_IntelPairHmm_doneNative
 (JNIEnv* env, jobject obj)
 {
-
 }

@@ -1,3 +1,26 @@
+/**
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2016-2021 Intel Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #ifndef COMMON_AVX_H
 #define COMMON_AVX_H
 
@@ -6,9 +29,21 @@
     #include <intrin.h>
 #else
     // SIMD intrinsics for GCC
-    #include <x86intrin.h>
     #include <stdint.h>
+#ifndef __aarch64__
+    #include <x86intrin.h>
     #include <cpuid.h>
+#else
+#ifdef SSE2NEON
+#include <sse2neon.h>
+#else
+    #define SIMDE_ENABLE_NATIVE_ALIASES
+    #include <simde/x86/avx512.h>
+    #include <simde/x86/avx.h>
+    #include <simde/x86/sse4.1.h>
+    #include <simde/x86/sse.h>
+#endif
+#endif
 #endif
 
 // helper function
@@ -46,6 +81,7 @@ int check_xcr0_zmm()
 inline
 bool is_avx_supported()
 {
+#ifndef __aarch64__
     uint32_t a, b, c, d;
     uint32_t avx_mask = (1 << 27) | (1 << 28);
 
@@ -59,8 +95,10 @@ bool is_avx_supported()
     {
         return false;
     }
+#endif
 
     return true;
+
 }
 
 /*
@@ -69,6 +107,7 @@ bool is_avx_supported()
 inline
 bool is_avx2_supported()
 {
+#ifndef __aarch64__
     uint32_t a, b, c, d;
     uint32_t osxsave_mask = (1 << 27); // OSX.
     uint32_t avx2_bmi_mask = (1 << 5) | // AVX2
@@ -94,7 +133,7 @@ bool is_avx2_supported()
     {
         return false;
     }
-
+#endif
     return true;
 }
 
@@ -104,7 +143,7 @@ bool is_avx2_supported()
 inline
 bool is_avx512_supported()
 {
-#ifndef __APPLE__
+#if not (defined( __APPLE__ )) && not (defined(__aarch64__))
     uint32_t a, b, c, d;
     uint32_t osxsave_mask = (1 << 27); // OSX.
     uint32_t avx512_skx_mask = (1 << 16) | // AVX-512F

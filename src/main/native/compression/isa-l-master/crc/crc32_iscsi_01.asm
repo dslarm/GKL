@@ -50,8 +50,9 @@ default rel
 ;;;         len = rdx
 ;;;    crc_init = r8
 
-global  crc32_iscsi_01:function
+mk_global  crc32_iscsi_01, function
 crc32_iscsi_01:
+	endbranch
 
 %ifidn __OUTPUT_FORMAT__, elf64
 %define bufp            rdi
@@ -97,6 +98,11 @@ crc32_iscsi_01:
 	mov	crc_init, crc_init_arg
 %endif
 
+	;; If len is less than 8 we need to jump to special code to avoid
+	;; reading beyond the end of the buffer
+	cmp	len, 8
+	jb	less_than_8
+
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	;; 1) ALIGN: ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,11 +113,6 @@ crc32_iscsi_01:
 	and	bufp, 7             ;; calculate the unalignment amount of
 				    ;; the address
 	je	proc_block          ;; Skip if aligned
-
-	;; If len is less than 8 and we're unaligned, we need to jump
-	;; to special code to avoid reading beyond the end of the buffer
-	cmp	len, 8
-	jb	less_than_8
 
 	;;;; Calculate CRC of unaligned bytes of the buffer (if any) ;;;
 	mov	tmp, [bufptmp]      ;; load a quadword from the buffer
@@ -214,6 +215,7 @@ non_prefetch:
 %rep 128-1
 
 CONCAT(crc_,i,:)
+	endbranch
 	crc32	crc_init,  qword [block_0 - i*8]
 	crc32	crc1,      qword [block_1 - i*8]
 	crc32	crc2,      qword [block_2 - i*8]
@@ -334,17 +336,17 @@ do_16:
 less_than_8:
 	test	len,4
 	jz	less_than_4
-	crc32	crc_init_dw, dword[bufptmp]
-	add	bufptmp,4
+	crc32	crc_init_dw, dword[bufp]
+	add	bufp,4
 less_than_4:
 	test	len,2
 	jz	less_than_2
-	crc32	crc_init_dw, word[bufptmp]
-	add	bufptmp,2
+	crc32	crc_init_dw, word[bufp]
+	add	bufp,2
 less_than_2:
 	test	len,1
 	jz	do_return
-	crc32	crc_init_dw, byte[bufptmp]
+	crc32	crc_init_dw, byte[bufp]
 	mov	rax, crc_init
 	pop	rsi
 	pop	rdi

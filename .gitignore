@@ -1,5 +1,10 @@
 .gradle/
 build/
+.vscode/
+bin/
+.settings/
+.project
+.classpath
 
 #================================================================================
 # from https://github.com/github/gitignore/blob/master/Global/JetBrains.gitignore
@@ -12,8 +17,12 @@ build/
 .idea/vcs.xml
 .idea/jsLibraryMappings.xml
 .idea/misc.xml
+.idea/compiler.xml
+.idea/modules.xml
+
 
 # Sensitive or high-churn files:
+.idea/
 .idea/dataSources.ids
 .idea/dataSources.xml
 .idea/dataSources.local.xml
@@ -21,7 +30,12 @@ build/
 .idea/dynamic.xml
 .idea/uiDesigner.xml
 .idea/modules
+.idea/copyright
 
 # Gradle:
 .idea/gradle.xml
 .idea/libraries
+
+# Test folder
+scripts/gatk
+scripts/test

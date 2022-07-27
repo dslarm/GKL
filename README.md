@@ -1,16 +1,20 @@
+The Intel Genomics Libary versions prior to 0.8.9 do not include the latest functional and security updates. Intel Genomics Libary Version 0.8.9 has been released in December 23rd 2021 and includes important security updates. Customers should update to the latest version now.
+
+Intel has aditional testing under way on the v0.8.9 release we expect to finish in January 2022.  
+
+
 [![Build Status](https://travis-ci.org/Intel-HLS/GKL.svg?branch=master)](https://travis-ci.org/Intel-HLS/GKL)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.intel.gkl/gkl/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.intel.gkl/gkl)
 
 # Genomics Kernel Library (GKL)
 This repository contains optimized versions of compute kernels used in genomics applications like
 [GATK](https://github.com/broadinstitute/gatk) and [HTSJDK](https://github.com/samtools/htsjdk). These kernels are
-optimized to run on Intel Architecture (AVX, AVX2, AVX-512, multicore, and FPGA) under 64-bit Linux and Mac OSX.
+optimized to run on Intel Architecture (AVX, AVX2, AVX-512, and multicore) under 64-bit Linux and Mac OSX.
 
 Kernels included:
 * **PairHMM**
   * AVX and AVX-512 optimized versions of PairHMM used in GATK HaplotypeCaller and MuTect2. 
   * OpenMP support for multicore processors.
-  * FPGA support for [Intel PAC](https://www.altera.com/products/boards_and_kits/dev-kits/altera/acceleration-card-arria-10-gx.html) and select vendor cards.
 * **Smith-Waterman**
   * AVX2 and AVX-512 optimized versions of Smith-Waterman used in GATK HaplotypeCaller and MuTect2.
 * **DEFLATE Compression/Decompression**:
@@ -18,7 +22,7 @@ Kernels included:
   * Performance optimized Level 3 through 9 compression from Intel's [Open Source Technology Center](https://01.org/) [zlib](https://github.com/jtkukunas/zlib) library.
 
 # Building GKL
-GKL release binaries are built on CentOS 6 to enable running on most Linux distributions (see [holy-build-box](https://github.com/phusion/holy-build-box#problem-introduction) for a good discription of portability issues).
+GKL release binaries are built on CentOS 7, to enable running on most Linux distributions (see [holy-build-box](https://github.com/phusion/holy-build-box#problem-introduction) for a good discription of portability issues).
 
 ## Requirements
 * Java JDK 8
@@ -34,18 +38,19 @@ GKL release binaries are built on CentOS 6 to enable running on most Linux distr
 ## Setup
 Run these commands to setup the build environment on CentOS:
 ```
-sudo yum install -y java-1.8.0-openjdk-devel git cmake patch libtool automake yasm zlib-devel centos-release-scl
-sudo yum install -y devtoolset-4-gcc-c++
-source scl_source enable devtoolset-4
+sudo yum install -y java-1.8.0-openjdk-devel git cmake patch libtool automake yasm zlib-devel centos-release-scl help2man
+sudo yum install -y devtoolset-7-gcc-c++
+source scl_source enable devtoolset-7
 ```
 
 ## Build and Test
-After build requirements are met, clone, build, and test:
+After build requirements are met, clone, and build :
 ```
 git clone https://github.com/Intel-HLS/GKL.git
 cd GKL
-./gradlew test
+./gradlew build
 ```
+For more details check `build.sh`
 
 # License
 All code is licensed under the [MIT License](https://opensource.org/licenses/MIT), except:
@@ -53,3 +58,4 @@ All code is licensed under the [MIT License](https://opensource.org/licenses/MIT
 * ISA-L code is licensed under the [BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause).
 * Intel Open Source Technology Center zlib (otc_zlib) code is licensed under the [Zlib License](https://opensource.org/licenses/Zlib).
 * zlib code is licensed under the [Zlib License](https://opensource.org/licenses/Zlib).
+

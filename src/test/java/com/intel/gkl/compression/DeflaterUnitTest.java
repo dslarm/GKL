@@ -29,27 +29,21 @@
 package com.intel.gkl.compression;
 
 
+import com.intel.gkl.testingutils.CompressionDataProviders;
+import com.intel.gkl.testingutils.TestingUtils;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import com.intel.gkl.compression.IntelInflater;
-import htsjdk.samtools.util.zip.DeflaterFactory;
 
-
-
-import java.util.Random;
-import java.util.zip.Inflater;
+import java.util.Arrays;
+import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
-public class DeflaterUnitTest {
 
-    public void randomDNA(byte[] array) {
-        final byte[] DNA_CHARS = {'A', 'C', 'G', 'T'};
-        final Random rng = new Random();
-
-        for (int i = 0; i < array.length; i++) {
-            array[i] = DNA_CHARS[rng.nextInt(4)];
-        }
-    }
+public class DeflaterUnitTest extends CompressionUnitTestBase {
+    protected final static Log log = LogFactory.getLog(DeflaterUnitTest.class);
 
     @Test(enabled = true)
     public void loadLibrary() {
@@ -59,39 +53,236 @@ public class DeflaterUnitTest {
         Assert.assertTrue(Supported);
     }
 
+    @Test(enabled = true, expectedExceptions = NullPointerException.class)
+    public void setInputShortThrowsNullPointerExceptionWhenNullBufferTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+
+        deflater.setInput((byte []) null);
+
+        Assert.fail();
+    }
+    @Test(enabled = true, expectedExceptions = NullPointerException.class)
+    public void setInputLongThrowsNullPointerExceptionWhenNullBufferTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+
+        deflater.setInput(null, 0, 0);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true, expectedExceptions = ArrayIndexOutOfBoundsException.class)
+    public void setInputThrowsArrayIndexOutOfBoundsExceptionWhenOffsetLessThanZeroTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        byte[] buffer = new byte[] {'A', 'C', 'G', 'T'};
+
+        deflater.setInput(buffer,-1, buffer.length);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true, expectedExceptions = ArrayIndexOutOfBoundsException.class)
+    public void setInputThrowsArrayIndexOutOfBoundsExceptionWhenLengthLessThanZeroTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        byte[] buffer = new byte[] {'A', 'C', 'G', 'T'};
+
+        deflater.setInput(buffer,0, -1);
+
+        Assert.fail();
+    }
+    @Test(enabled = true, expectedExceptions = ArrayIndexOutOfBoundsException.class)
+    public void setInputThrowsArrayIndexOutOfBoundsExceptionWhenOffsetGreaterThanLengthTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        byte[] buffer = new byte[] {'A', 'C', 'G', 'T'};
+
+        deflater.setInput(buffer,4, buffer.length);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true,expectedExceptions = NullPointerException.class)
+    public void deflateThrowsNullPointerExceptionWhenNullBufferTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+
+        deflater.deflate(null, 0, 1);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true,expectedExceptions = IllegalArgumentException.class)
+    public void deflateThrowsIllegalArgumentExceptionWhenOffsetGreaterThanZeroTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        byte[] outputBuffer = new byte[10];
+        deflater.deflate(outputBuffer, 1, outputBuffer.length);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true,expectedExceptions = IllegalArgumentException.class)
+    public void deflateThrowsIllegalArgumentExceptionWhenOffsetLessThanZeroTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        byte[] outputBuffer = new byte[10];
+
+        deflater.deflate(outputBuffer, -1, outputBuffer.length);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true,expectedExceptions = ArrayIndexOutOfBoundsException.class)
+    public void deflateThrowsArrayIndexOutOfBoundsExceptionWhenLengthLessThanZeroTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        byte[] outputBuffer = new byte[10];
+
+        deflater.deflate(outputBuffer, 0, -1);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true,expectedExceptions = ArrayIndexOutOfBoundsException.class)
+    public void deflateThrowsArrayIndexOutOfBoundsExceptionWhenLengthEqualZeroTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        byte[] outputBuffer = new byte[10];
+
+        deflater.deflate(outputBuffer, 0, 0);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true, expectedExceptions = RuntimeException.class)
+    public void deflateEmptyOutputBufferTest(){
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        int LEN = 10;
+        byte[] inputBuffer = new byte[LEN];
+        TestingUtils.randomDNA(inputBuffer);
+
+        int bytes = 0;
+        byte[] outputBufferBad = new byte[0];
+        try
+        {
+            deflater.setInput(inputBuffer, 0 , inputBuffer.length );
+            bytes = deflater.deflate(outputBufferBad, 0, outputBufferBad.length);
+        }
+        catch(Exception e)
+        {
+            log.error(e.getMessage());
+            throw e;
+        }
+        log.info("Insufficient Buffer : " + outputBufferBad.length  +" Bytes written : " + bytes);
+
+        Assert.fail();
+    }
+
+    @Test(enabled = true, expectedExceptions = NullPointerException.class)
+    public void deflateEmptyInputBufferTest() {
+        final Deflater deflater = new IntelDeflaterFactory().makeDeflater(0, true);
+        int LEN = 10;
+        byte[] inputBuffer = new byte[0];
+        try {
+            byte[] outputBufferBad = new byte[LEN];
+            deflater.setInput(inputBuffer, 0, inputBuffer.length);
+            int bytes = deflater.deflate(outputBufferBad, 0, outputBufferBad.length);
+	    if (bytes != 0)
+		 Assert.fail();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw e;
+        }
+        Assert.fail();
+    }
+
+    @Test(enabled = true, dataProviderClass = CompressionDataProviders.class,
+            dataProvider = compatibilityTestsDataProviderName, groups = {"compatibilityTests"})
+    public void intelDeflationJavaInflationCompatibilityTest(int level, boolean nowrap) throws DataFormatException {
+        //arrange
+        int inputLen = TestingUtils.getMaxInputSizeForGivenOutputSize(compatibilityTestsBufferSize, level);
+        int compressedLen = compatibilityTestsBufferSize;
+
+        final byte[] input = Arrays.copyOf(compatibilityInputBuffer, inputLen);
+        final byte[] compressed = new byte[compressedLen];
+        final byte[] decompressed = new byte[inputLen];
+
+        Deflater intelDeflater = new IntelDeflaterFactory().makeDeflater(level, nowrap);
+        Inflater javaInflater = new Inflater(nowrap);
+
+        //act
+        intelDeflater.setInput(input,0,input.length);
+        intelDeflater.finish();
+        intelDeflater.deflate(compressed,0,compressed.length);
+        intelDeflater.end();
+
+        javaInflater.setInput(compressed,0,compressed.length);
+        javaInflater.inflate(decompressed,0,decompressed.length);
+        javaInflater.end();
+
+        //assert
+        Assert.assertEquals(decompressed,input);
+    }
+
+
+    @Test(enabled = true, dataProviderClass = CompressionDataProviders.class,
+            dataProvider = compatibilityTestsDataProviderName, groups = {"compatibilityTests"})
+    public void intelDeflationIntelInflationCompatibilityTest(int level, boolean nowrap) throws DataFormatException {
+        //arrange
+        int inputLen = TestingUtils.getMaxInputSizeForGivenOutputSize(compatibilityTestsBufferSize, level);
+        int compressedLen = compatibilityTestsBufferSize;
+
+        final byte[] input = Arrays.copyOf(compatibilityInputBuffer, inputLen);
+        final byte[] compressed = new byte[compressedLen];
+        final byte[] decompressed = new byte[inputLen];
+
+        Deflater intelDeflater = new IntelDeflaterFactory().makeDeflater(level, nowrap);
+        Inflater intelInflater = new IntelInflaterFactory().makeInflater(nowrap);
+
+        //act
+        intelDeflater.setInput(input,0,input.length);
+        intelDeflater.finish();
+        intelDeflater.deflate(compressed,0, compressed.length);
+        intelDeflater.end();
+
+        intelInflater.setInput(compressed,0,compressed.length);
+        intelInflater.inflate(decompressed,0,decompressed.length);
+        intelInflater.end();
+
+        //assert
+        Assert.assertEquals(decompressed, input);
+    }
+
     @Test(enabled = true)
     public void randomDNATest() {
-        final int LEN = 4*1024*1024;
+        final int LEN = TestingUtils.SIZE_4MB;
         final byte[] input = new byte[LEN];
         final byte[] compressed = new byte[2*LEN];
         final byte[] result = new byte[LEN];
 
-
         for(int level=0; level <10; level++) {
             for (int i = 0; i < 1; i++) {
-            final IntelDeflaterFactory intelDeflaterFactory = new IntelDeflaterFactory();
-            final Deflater deflater = intelDeflaterFactory.makeDeflater(level, true);
+                final IntelDeflaterFactory intelDeflaterFactory = new IntelDeflaterFactory();
+                final Deflater deflater = intelDeflaterFactory.makeDeflater(level, true);
 
-            Assert.assertTrue(intelDeflaterFactory.usingIntelDeflater());
+                Assert.assertTrue(intelDeflaterFactory.usingIntelDeflater());
 
-            final boolean isSupported = new IntelInflater().load(null);
-            Assert.assertTrue(isSupported);
-            final IntelInflater inflater = new IntelInflater(true);
+                final boolean isSupported = new IntelInflater().load(null);
+                Assert.assertTrue(isSupported);
+                final IntelInflater inflater = new IntelInflater(true);
 
-            //Inflater inflater = new Inflater(true);
+                TestingUtils.randomDNA(input);
 
-
-                randomDNA(input);
                 deflater.setInput(input, 0, input.length);
                 deflater.finish();
 
                 int compressedBytes = 0;
-                while (!deflater.finished()) {
-                    compressedBytes = deflater.deflate(compressed, 0, compressed.length);
+                try{
+                    while (!deflater.finished()) {
+                        log.info(String.format("Level %d ", level));
+                        compressedBytes = deflater.deflate(compressed, 0, compressed.length);
+                    }
+                }
+                catch(Exception e){
+                    log.error(String.format("%s ", e.getMessage()));
+                    e.printStackTrace();
                 }
 
-                System.out.printf("%d bytes compressed to %d bytes : %2.2f%% compression\n",
-                        LEN, compressedBytes, 100.0 - 100.0 * compressedBytes / LEN);
+                log.info(String.format("%d bytes compressed to %d bytes : %2.2f%% compression",
+                        LEN, compressedBytes, (100.0 - 100.0 * compressedBytes / LEN)));
 
                 long totalTime = 0;
 
@@ -102,17 +293,18 @@ public class DeflaterUnitTest {
                     final long start = System.currentTimeMillis();
                     inflater.inflate(result, 0, LEN);
                     totalTime = System.currentTimeMillis() - start;
-                    System.out.printf("%d\n", totalTime);
+                    log.info(String.format("%d ", totalTime));
 
 
                 } catch (Exception e) {
+                    log.error(String.format("%s ", e.getMessage()));
                     e.printStackTrace();
                 }
 
                 Assert.assertEquals(input, result);
 
-            inflater.end();
-            deflater.end();
+                inflater.end();
+                deflater.end();
             }
         }
     }

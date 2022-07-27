@@ -1,47 +1,46 @@
-/*
- * The MIT License
+/**
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016 Intel Corporation
+ * Copyright (c) 2016-2021 Intel Corporation
  *
- * 	Permission is hereby granted, free of charge, to any person
- * 	obtaining a copy of this software and associated documentation
- * 	files (the "Software"), to deal in the Software without
- * 	restriction, including without limitation the rights to use,
- * 	copy, modify, merge, publish, distribute, sublicense, and/or
- * 	sell copies of the Software, and to permit persons to whom the
- * 	Software is furnished to do so, subject to the following
- * 	conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * 	The above copyright notice and this permission notice shall be
- * 	included in all copies or substantial portions of the
- * 	Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * 	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- * 	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- * 	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- * 	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * 	COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * 	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * 	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * 	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
-
 package com.intel.gkl.compression;
 
-import com.intel.gkl.IntelGKLUtils;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
+
 import com.intel.gkl.NativeLibraryLoader;
 import org.broadinstitute.gatk.nativebindings.NativeLibrary;
 
 import java.io.File;
+import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 /**
  * Provides a native Inflater implementation accelerated for the Intel Architecture.
  */
 public final class IntelInflater extends Inflater implements NativeLibrary {
+    private static final Log logger = LogFactory.getLog(IntelInflater.class);
     private static final String NATIVE_LIBRARY_NAME = "gkl_compression";
     private static boolean initialized = false;
-
+    private static final Object lock_class = new Object();
     /**
      * Loads the native library, if it is supported on this platform. <p>
      * Returns false if AVX is not supported. <br>
@@ -53,15 +52,16 @@ public final class IntelInflater extends Inflater implements NativeLibrary {
      */
     @Override
     public synchronized boolean load(File tempDir) {
-
-        if (!NativeLibraryLoader.load(tempDir, NATIVE_LIBRARY_NAME)) {
-            return false;
-        }
-        if (!initialized) {
-            initNative();
-            initialized = true;
-        }
-        return true;
+        synchronized (lock_class) {
+		if (!NativeLibraryLoader.load(tempDir, NATIVE_LIBRARY_NAME)) {
+			return false;
+		}
+		if (!initialized) {
+			initNative();
+			initialized = true;
+		}
+	}
+	return true;
     }
 
     private long lz_stream;
@@ -84,8 +84,11 @@ public final class IntelInflater extends Inflater implements NativeLibrary {
      * @param nowrap if true then use GZIP compatible compression
      */
     public IntelInflater(boolean nowrap) {
-      //  initFieldsNative();
-        this.nowrap = nowrap;
+	if(nowrap == false) {
+		 throw new IllegalArgumentException("ZLIB format is not supported at this time with Intel GKL");
+	}
+	    
+	this.nowrap = nowrap;
 
     }
 
@@ -94,12 +97,18 @@ public final class IntelInflater extends Inflater implements NativeLibrary {
      * Compressed data will be generated in ZLIB format.
      */
     public IntelInflater() {
-        this(false);
+        this(true);
     }
 
     @Override
-    public void reset() {
-        resetNative(nowrap);
+    public void reset() throws OutOfMemoryError {
+        try {
+            resetNative(nowrap);
+        } catch (OutOfMemoryError e) {
+            logger.warn("Exception thrown from native Inflater resetNative function call " + e.getMessage());
+            throw new OutOfMemoryError("Memory allocation failed");
+        }
+
         inputBuffer = null;
         inputBufferLength = 0;
         finished = false;
@@ -114,13 +123,19 @@ public final class IntelInflater extends Inflater implements NativeLibrary {
      * @see IntelDeflater#needsInput
      */
     @Override
-    public void setInput(byte[] b, int off, int len) throws NullPointerException {
+    public void setInput(byte[] b, int off, int len) {
         if(lz_stream == 0) reset();
         if(b == null) {
-            throw new NullPointerException("Input is null");
+            throw new NullPointerException("Input buffer is null");
         }
-        if(len <= 0) {
-            throw new NullPointerException("Input buffer length is zero.");
+        if (off < 0) {
+            throw new ArrayIndexOutOfBoundsException("Offset value is less than zero");
+        }
+        if (len < 0) {
+            throw new ArrayIndexOutOfBoundsException("Length value is less than zero");
+        }
+        if (off > b.length - len) {
+            throw new ArrayIndexOutOfBoundsException("Length value exceeds permissible range");
         }
         inputBuffer = b;
         inputBufferOffset = off;
@@ -142,7 +157,26 @@ public final class IntelInflater extends Inflater implements NativeLibrary {
      */
     @Override
     public int inflate (byte[] b, int off, int len ) {
-        return inflateNative(b, off, len);
+        if(b == null) {
+            throw new NullPointerException("Output buffer is null");
+        }
+        if (off < 0){
+            throw new ArrayIndexOutOfBoundsException("Offset value is less than zero");
+        }
+        if(len < 0){
+            throw new ArrayIndexOutOfBoundsException("Length value is less than zero");
+        }
+        if(off > b.length - len) {
+            throw new ArrayIndexOutOfBoundsException("Length value exceeds permissible range");
+        }
+        if(inputBuffer == null || inputBufferLength == 0) {
+            throw new NullPointerException("Input buffer is null");
+        }
+
+        int bytesWritten = inflateNative(b, off, len);
+        if(bytesWritten == 0)
+            logger.warn(String.format("Zero Bytes Written : %d", bytesWritten));
+        return bytesWritten;
     }
 
     /**
@@ -152,7 +186,11 @@ public final class IntelInflater extends Inflater implements NativeLibrary {
      * been reached
      */
     @Override
-    public int inflate (byte[] b ) {
+    public int inflate (byte[] b) {
+        if(b == null) {
+            throw new NullPointerException("Output buffer is null");
+        }
+
         return inflateNative( b, 0, b.length);
     }
 

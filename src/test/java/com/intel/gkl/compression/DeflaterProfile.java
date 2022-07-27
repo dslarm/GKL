@@ -3,8 +3,8 @@ package com.intel.gkl.compression;
 import com.intel.gkl.IntelGKLUtils;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.zip.DeflaterFactory;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -14,13 +14,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.Deflater;
-
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 /**
  * Integration and performance/compression profiling test for IntelDeflater
  */
 public class DeflaterProfile {
 
-    private final static Logger log = LogManager.getLogger(DeflaterIntegrationTest.class);
+    private final static Log log = LogFactory.getLog(DeflaterIntegrationTest.class);
     private final static String INPUT_FILE = IntelGKLUtils.pathToTestResource("HiSeq.1mb.1RG.2k_lines.bam");
 
     @Test(enabled = true)
@@ -51,12 +52,15 @@ public class DeflaterProfile {
         deflaterFactories.add(intelDeflaterFactory);
         deflaterFactories.add(javaDeflaterFactory);
 
-        // create profile log file
-        final FileWriter fileWriter = new FileWriter(profileFile);
+	// create profile log file
+	final FileOutputStream fileStream = new FileOutputStream(profileFile);
+	final OutputStreamWriter fileWriter = new OutputStreamWriter(fileStream, "UTF-8");
+//	final FileWriter fileWriter = new FileWriter(profileFile);
+	try {
+		fileWriter.write("level, time(sec), filesize\n");
+	} catch (IOException e) {System.err.println("Caught IOException: " +  e.getMessage());}
 
-        fileWriter.write("level, time(sec), filesize\n");
-
-        //int loopCount = Integer.parseInt(System.getProperty("loop", "10"));
+	//int loopCount = Integer.parseInt(System.getProperty("loop", "10"));
         int loopCount = 1;
         for (DeflaterFactory deflaterFactory : deflaterFactories) {
             for (int compressionLevel = 1; compressionLevel < 2; compressionLevel++) {
@@ -82,9 +86,11 @@ public class DeflaterProfile {
                         writer.close();
                     }
                 }
-                fileWriter.write(String.format("%d, %.3f, %d\n",
-                        compressionLevel, totalTime / 1000.0 / loopCount, outputFile.length()));
-                fileWriter.flush();
+		try {
+			fileWriter.write(String.format("%d, %.3f, %d%n",
+					compressionLevel, (totalTime/1000.0/loopCount), outputFile.length()));
+			fileWriter.flush();
+		} catch (IOException e) {System.err.println("Caught IOException: " +  e.getMessage());}
             }
         }
         fileWriter.close();

@@ -19,16 +19,15 @@ repositories {
 }
 
 dependencies {
-    compile 'commons-io:commons-io:2.4'
-    compile 'org.broadinstitute:gatk-native-bindings:0.1.0-rc-1'
-    compile 'org.apache.logging.log4j:log4j-api:2.5'
-    compile 'org.apache.logging.log4j:log4j-core:2.5'
-    compile 'com.github.samtools:htsjdk:2.9.0'
-    testCompile 'org.testng:testng:6.9.9'
+    compile 'commons-io:commons-io:2.7'
+    compile 'org.broadinstitute:gatk-native-bindings:1.0.0'
+    compile 'commons-logging:commons-logging:1.2'
+    compile 'com.github.samtools:htsjdk:2.21.1'
+    testCompile 'org.testng:testng:7.4.0'
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.2.1'
+ wrapper {
+    gradleVersion = '5.6'
 }
 
 //===================================================================
@@ -57,7 +56,7 @@ task cmakeBuild(type: Exec) {
 
 task copyNativeLib(type: Copy) {
     from nativeBuildDir
-    into "$buildDir/classes/main/com/intel/gkl/native"
+    into "$buildDir/classes/java/main/com/intel/gkl/native"
     include '*.so'
     include '*.dylib'
 }
@@ -73,22 +72,29 @@ compileJava.finalizedBy copyNativeLib
 copyNativeLib.finalizedBy buildOnMac
 copyNativeLib.dependsOn cmakeBuild
 cmakeBuild.dependsOn cmakeConfig
-
+test.dependsOn copyNativeLib
 //===================================================================
 // test
 //===================================================================
 
 test {
-    useTestNG()
+    def longTestsEnabled = System.getProperty('long_tests')
 
+    def additionalJvmArgs = []
+
+    if (longTestsEnabled != null){
+        additionalJvmArgs.add '-Xmx24G'
+    }
+    useTestNG {
+    }
     // propagate system properties to test JVM
     systemProperties = System.getProperties()
 
     if (project.hasProperty('debug')) {
-        jvmArgs '-verbose:jni', '-Xcheck:jni', '-XX:+RestoreMXCSROnJNICalls'
+        jvmArgs('-verbose:jni', '-Xcheck:jni', '-XX:+RestoreMXCSROnJNICalls', *additionalJvmArgs)
     }
     else {
-        jvmArgs '-Xcheck:jni', '-XX:+RestoreMXCSROnJNICalls'
+        jvmArgs('-Xcheck:jni', '-XX:+RestoreMXCSROnJNICalls', *additionalJvmArgs)
     }
 
     testLogging {
@@ -119,7 +125,6 @@ jar {
     baseName = "gkl"
     // include LICENSE file in jar
     from "LICENSE"
-    exclude "log4j2.xml"
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -192,16 +197,16 @@ uploadArchives {
                 }
                 developers {
                     developer {
-                        name = "George Powley"
-                        email = "george.s.powley@intel.com"
+                        name = "Keith Mannthey"
+                        email = "keith.mannthey@intel.com"
                     }
                     developer {
                         name = "Priya Vaidya"
                         email = "priya.n.vaidya@intel.com"
                     }
                     developer {
-                        name = "Ernesto Brau"
-                        email = "ernesto.brau@intel.com"
+                        name = "Marissa Powers"
+                        email = "marissa.e.powers@intel.com"
                     }
                 }
             }
