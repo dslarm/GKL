@@ -3,7 +3,6 @@
 #include <fstream>
 #include <vector>
 #include <string.h>
-#include <xmmintrin.h>
 #include "IntelPairHmm.h"
 #include "pairhmm_common.h"
 #include "avx_impl.h"
