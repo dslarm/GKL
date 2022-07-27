@@ -511,11 +511,12 @@ int32_t CONCAT(runSWOnePairBT_,SIMD_ENGINE)(int32_t match, int32_t mismatch, int
     getCIGAR(&p, cigarBuf_, cigarLen, 0);
     (*cigarCount) = p.cigarCount;
 
+    *score = p.score;
+
     _mm_free(E_);
     _mm_free(backTrack_);
     _mm_free(cigarBuf_);
 
     *offset = p.alignmentOffset;
     return SW_SUCCESS;
-    }
->>>>>>> master
+}

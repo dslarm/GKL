@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
         SeqPair *p = seqPairArray + i;
         p->cigar = myCigarArray;
 
-        align(p->seq1, p->seq2, p->cigar, w_match, w_mismatch, w_open, w_extend, p->overhangStrategy, &(p->score), &(p->alignmentOffset));
+        align(p->seq1, p->seq2, p->cigar, strlen(p->cigar), w_match, w_mismatch, w_open, w_extend, p->overhangStrategy, &(p->score), &(p->alignmentOffset));
 
     }
 #if 1
