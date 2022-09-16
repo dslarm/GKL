@@ -50,6 +50,7 @@
 inline
 int check_xcr0_ymm()
 {
+#ifndef __aarch64__
     uint32_t xcr0;
 #if defined(_MSC_VER)
     xcr0 = (uint32_t)_xgetbv(0);
@@ -57,12 +58,17 @@ int check_xcr0_ymm()
     __asm__ ("xgetbv" : "=a" (xcr0) : "c" (0) : "%edx");
 #endif
     return ((xcr0 & 6) == 6);
+#else
+    return true;
+#endif
+    
 }
 
 // helper function
 inline
 int check_xcr0_zmm()
 {
+#ifndef __aarch64__
     uint32_t xcr0;
     uint32_t zmm_ymm_xmm = (7 << 5) | (1 << 2) | (1 << 1);
 #if defined(_MSC_VER)
@@ -73,6 +79,9 @@ int check_xcr0_zmm()
 #endif
     /* check if xmm, zmm and zmm state are enabled in XCR0 */
     return ((xcr0 & zmm_ymm_xmm) == zmm_ymm_xmm);
+#else
+    return true;
+#endif
 }
 
 /*
