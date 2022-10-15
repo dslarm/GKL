@@ -42,6 +42,8 @@
 #endif
 #endif
 
+#ifndef __aarch64__
+
 // helper function
 inline
 int check_xcr0_ymm()
@@ -70,6 +72,7 @@ int check_xcr0_zmm()
     /* check if xmm, zmm and zmm state are enabled in XCR0 */
     return ((xcr0 & zmm_ymm_xmm) == zmm_ymm_xmm);
 }
+#endif
 
 /*
  * Determine if AVX is supported. Returns true if supported.
