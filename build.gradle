@@ -5,6 +5,7 @@ plugins {
     id 'com.palantir.git-version' version '0.5.2'
 }
 
+
 compileJava {
     options.compilerArgs = ['-proc:none', '-Xlint:all','-Werror','-Xdiags:verbose']
 }
@@ -25,7 +26,6 @@ dependencies {
     compile 'com.github.samtools:htsjdk:2.21.1'
     testCompile 'org.testng:testng:7.4.0'
 }
-
  wrapper {
     gradleVersion = '5.6'
 }
@@ -40,7 +40,18 @@ task cmakeConfig(type: Exec) {
     standardOutput = new ByteArrayOutputStream()
     doFirst {mkdir nativeBuildDir}
     workingDir nativeBuildDir
-    commandLine 'cmake', '-Wno-dev', projectDir
+    String c_compiler = 'gcc'
+    String cxx_compiler = 'g++'
+    String extra_c_flags = ''
+    if (project.hasProperty('cc')) c_compiler = project.getProperty('cc')
+    if (project.hasProperty('cxx')) cxx_compiler = project.getProperty('cxx')
+    if (project.hasProperty('cflags')) extra_c_flags = project.getProperty('extra_c_flags')
+    commandLine 'cmake', '-Wno-dev', '-DCMAKE_C_COMPILER=' + c_compiler,
+    		'-DCMAKE_CXX_COMPILER=' + cxx_compiler,
+		'-DCMAKE_CXX_FLAGS=' + extra_c_flags ,
+		'-DCMAKE_C_FLAGS=' + extra_c_flags ,
+		'-DCMAKE_VERBOSE_MAKEFILE=ON',
+		projectDir	
     inputs.files fileTree(projectDir) {include '**/CMakeLists.txt'}
     outputs.files "$nativeBuildDir/Makefile"
 }
