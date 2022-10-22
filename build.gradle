@@ -47,7 +47,7 @@ task cmakeConfig(type: Exec) {
     String extra_c_flags = ''
     if (project.hasProperty('cc')) c_compiler = project.getProperty('cc')
     if (project.hasProperty('cxx')) cxx_compiler = project.getProperty('cxx')
-    if (project.hasProperty('cflags')) extra_c_flags = project.getProperty('extra_c_flags')
+    if (project.hasProperty('cflags')) extra_c_flags = project.getProperty('cflags')
     commandLine 'cmake', '-Wno-dev', '-DCMAKE_C_COMPILER=' + c_compiler,
     		'-DCMAKE_CXX_COMPILER=' + cxx_compiler,
 		'-DCMAKE_CXX_FLAGS=' + extra_c_flags ,
