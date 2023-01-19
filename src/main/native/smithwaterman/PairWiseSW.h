@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 #include<stdio.h>
+#include<stdlib.h>
 #include "smithwaterman_common.h"
 
 #ifdef __aarch64__
