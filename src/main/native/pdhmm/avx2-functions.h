@@ -115,6 +115,10 @@
 #define VEC_CVT_PD_INT(__v1) \
     _mm256_cvtpd_epi32(__v1)
 
+#ifdef __aarch64__
+  #define _MM_FROUND_NO_EXC SIMDE_MM_FROUND_NO_EXC 
+#endif
+  
 #define VEC_CVT_ROUND_PD_LONG(__v1) \
     VEC_CVT_INT_LONG(VEC_CVT_PD_INT(_mm256_round_pd(__v1, (_MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC))))
 
