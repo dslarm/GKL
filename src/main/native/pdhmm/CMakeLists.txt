@@ -1,3 +1,12 @@
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+    set (X86 TRUE)
+    message("Is x86")
+else ()
+    set (X86 FALSE)
+    message("Is not x86")
+endif ()
+
 #---------------------------------------------------------------------
 # common
 #---------------------------------------------------------------------
@@ -6,9 +15,10 @@ if(NOT APPLE)
 endif()
 set_property(SOURCE MathUtils.cc APPEND_STRING PROPERTY COMPILE_FLAGS)
 set_property(SOURCE pdhmm-serial.cc APPEND_STRING PROPERTY COMPILE_FLAGS)
-set_property(SOURCE avx2_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 -msse2 -msse4.1")
-set_property(SOURCE avx512_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 -mavx512f -mavx512dq -mavx512vl -mavx512bw")
-
+if (X86)
+  set_property(SOURCE avx2_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 -msse2 -msse4.1")
+  set_property(SOURCE avx512_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx -mavx2 -mavx512f -mavx512dq -mavx512vl -mavx512bw")
+endif()
 
 #---------------------------------------------------------------------
 # common includes
