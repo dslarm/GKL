@@ -85,6 +85,7 @@ task buildOnMac(type: Exec) {
 compileJava.finalizedBy copyNativeLib
 copyNativeLib.finalizedBy buildOnMac
 copyNativeLib.dependsOn cmakeBuild
+cmakeConfig dependsOn javaCompile
 jar.dependsOn copyNativeLib
 javadoc.dependsOn copyNativeLib
 // TODO: clean up dependencies using Gradle 7+ dependency mechanism
