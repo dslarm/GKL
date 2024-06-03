@@ -14,6 +14,7 @@ set_property(SOURCE avx512_impl.cc APPEND_STRING PROPERTY COMPILE_FLAGS " -mavx 
 # common includes
 #---------------------------------------------------------------------
 include_directories(../common)
+include_directories(../../../../simde)
 
 find_package(OpenMP)
 
