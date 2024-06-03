@@ -44,7 +44,15 @@
 #include <cstdint>
 #include <cstdio>
 #include <debug.h>
+#ifdef __x86_64__
 #include <immintrin.h>
+#else
+  #define SIMDE_ENABLE_NATIVE_ALIASES
+  #include <simde/x86/avx512.h>
+  #include <simde/x86/avx.h>
+  #include <simde/x86/sse4.1.h>
+  #include <simde/x86/sse.h>
+#endif
 #include <algorithm>
 
 enum HMMState
