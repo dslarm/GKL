@@ -189,13 +189,13 @@ x86.o: $(SRCDIR)x86.c
 	$(CC) $(CFLAGS) $(ZINC) -c -o $@ $(SRCDIR)x86.c
 
 slide_sse.o: $(SRCDIR)slide_sse.c
-	$(CC) $(CFLAGS) $(ZINC) -msse2 -c -o $@ $(SRCDIR)slide_sse.c
+	$(CC) $(CFLAGS) $(ZINC) -c -o $@ $(SRCDIR)slide_sse.c
 
 crc_folding.o: $(SRCDIR)crc_folding.c
-	$(CC) $(CFLAGS) $(ZINC) -mpclmul -msse4 -c -o $@ $(SRCDIR)crc_folding.c
+	$(CC) $(CFLAGS) $(ZINC) -c -o $@ $(SRCDIR)crc_folding.c
 
 deflate_quick.o: $(SRCDIR)deflate_quick.c
-	$(CC) $(CFLAGS) $(ZINC) -msse4 -c -o $@ $(SRCDIR)deflate_quick.c
+	$(CC) $(CFLAGS) $(ZINC) -c -o $@ $(SRCDIR)deflate_quick.c
 
 deflate_medium.o: $(SRCDIR)deflate_medium.c
 	$(CC) $(CFLAGS) $(ZINC) -c -o $@ $(SRCDIR)deflate_medium.c
