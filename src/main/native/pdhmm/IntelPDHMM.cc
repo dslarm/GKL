@@ -33,11 +33,13 @@
 #include <cassert>
 #endif
 
+
 int32_t (*g_computePDHMM)(const int8_t *hap_bases, const int8_t *hap_pdbases, const int8_t *read_bases, const int8_t *read_qual, const int8_t *read_ins_qual, const int8_t *read_del_qual, const int8_t *gcp, double *result, int64_t t, const int64_t *hap_lengths, const int64_t *read_lengths, int32_t maxReadLength, int32_t maxHaplotypeLength);
 
 inline bool is_sse_supported()
 {
-    uint32_t a, b, c, d;
+#if __x86_64__
+  uint32_t a, b, c, d;
     uint32_t sse_mask = (1 << 27) | bit_SSE2 | bit_SSE4_1;
 
     __cpuid_count(1, 0, a, b, c, d);
@@ -51,6 +53,7 @@ inline bool is_sse_supported()
         return false;
     }
 
+#endif
     return true;
 }
 
