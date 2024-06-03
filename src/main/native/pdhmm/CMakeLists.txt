@@ -28,8 +28,13 @@ include_directories(../../../../simde)
 
 find_package(OpenMP)
 
+if (X86)
 set(TARGET gkl_pdhmm)
 add_library(${TARGET} SHARED IntelPDHMM.cc avx2_impl.cc avx512_impl.cc MathUtils.cc pdhmm-serial.cc)
+else ()
+set(TARGET gkl_pdhmm)
+add_library(${TARGET} SHARED IntelPDHMM.cc avx2_impl.cc MathUtils.cc pdhmm-serial.cc)
+endif() 
 if(OPENMP_FOUND)
   set_target_properties(${TARGET} PROPERTIES COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
   target_link_libraries(${TARGET} ${OpenMP_CXX_FLAGS})
