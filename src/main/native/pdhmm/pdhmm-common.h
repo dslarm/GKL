@@ -52,6 +52,8 @@
   #include <simde/x86/avx.h>
   #include <simde/x86/sse4.1.h>
   #include <simde/x86/sse.h>
+#define _mm_malloc(s,t) malloc((s))
+#define _mm_free free
 #endif
 #include <algorithm>
 
