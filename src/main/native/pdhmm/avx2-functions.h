@@ -24,6 +24,19 @@
 #ifndef _AVX2_FUNCTIONS_H
 #define _AVX2_FUNCTIONS_H
 
+#ifdef __x86_64__
+#include <immintrin.h>
+#else
+  #define SIMDE_ENABLE_NATIVE_ALIASES
+  #include <simde/x86/avx512.h>
+  #include <simde/x86/avx.h>
+  #include <simde/x86/sse4.1.h>
+  #include <simde/x86/sse.h>
+#define _mm_malloc(s,t) malloc((s))
+#define _mm_free free
+#endif
+
+
 #define VEC_DOUBLE_TYPE __m256d
 #define VEC_INT_TYPE __m128i
 #define INT_TYPE int32_t
